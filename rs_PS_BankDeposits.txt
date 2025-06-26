@@ -1,0 +1,48 @@
+//notes 
+  Script Name : rs_PS_BankDeposits.txt
+  Client Name : Public Storage
+  Created On  : 2025-06-17
+  Created By  : Beril Pehlivan
+  Description : YSR - Bank Deposits (Ran Daily)
+  - run for multiple properties
+  - property on each tab 
+  Modified On : 
+//end notes 
+
+
+//select display 
+
+select DISTINCT p.scode Property_Code,
+p.saddr1 PropertyName, p.hmy phmy,
+p.saddr2 StreetAddress,
+  DATENAME(WEEKDAY, CAST('#FromDate#' AS DATETIME)) + ', ' +
+  DATENAME(MONTH, CAST('#FromDate#' AS DATETIME)) + ' ' +
+  CAST(DAY(CAST('#FromDate#' AS DATETIME)) AS VARCHAR) + ', ' +
+  CAST(YEAR(CAST('#FromDate#' AS DATETIME)) AS VARCHAR) 
+  + ' to ' +
+  DATENAME(WEEKDAY, CAST('#ToDate#' AS DATETIME)) + ', ' +
+  DATENAME(MONTH, CAST('#ToDate#' AS DATETIME)) + ' ' +
+  CAST(DAY(CAST('#ToDate#' AS DATETIME)) AS VARCHAR) + ', ' +
+  CAST(YEAR(CAST('#ToDate#' AS DATETIME)) AS VARCHAR) 
+  AS ReportDateRange,
+  p.scity + ', ' + p.szipcode as StreetAddress2,
+  UPPER(ci.scode) Country,
+  b.scode BankName,
+	ISNULL(SUM(CASE WHEN t.cashreceipt in (1,-1) AND t2.sdateoccurred BETWEEN '#FromDate#' AND '#ToDate#' THEN t.stotalamount END), 0) AS TotalAmount,
+  --case when t.cashreceipt = -1 then 'Cash' when t.cashreceipt = 1 then 'Check' END AS PaymentType,
+'Link' keycol
+from property p 
+INNER JOIN listprop2 l ON l.hProplist = p.hmy
+    AND p.itype = 3 
+INNER JOIN country_info ci on ci.hmy = p.hcountry
+inner join trans t on t.hprop = p.hmy and t.itype in (6,7)
+inner join trans t2 on t2.hmy = t.hparent1 and t2.itype = 5
+inner join bank b on b.hmy = t2.hperson
+inner join bankxref br on br.hbaidx = b.hmy 
+where p.itypestorage in (1, -1)
+and t.itype in (6,7) and t2.itype = 5
+#conditions#
+group by p.saddr1, p.hmy, p.saddr2, p.scode, p.scity, p.szipcode, ci.scode, b.scode
+
+
+//end select 
